@@ -2,7 +2,7 @@ import base64
 import hashlib
 import json
 import requests
-from Cryptodome.Cipher import AES
+from Crypto.Cipher import AES
 from urllib.parse import quote, unquote
 
 class StringHelpers:

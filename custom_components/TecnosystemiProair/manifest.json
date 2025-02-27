@@ -4,7 +4,7 @@
     "config_flow": "true",
     "version": "0.0.0",
     "documentation": "TBD",
-    "requirements": ["requests", "Cryptodome", "retry", "pydantic"],
+    "requirements": ["requests", "Crypto", "retry", "pydantic"],
     "dependencies": [],
     "codeowners": ["@Mirmanero"]
   }

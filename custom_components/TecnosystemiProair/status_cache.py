@@ -7,14 +7,15 @@ from .const import (
 
 from homeassistant.core import HomeAssistant
 from datetime import datetime, timedelta
+from .status import Status
 
 _LOGGER = logging.getLogger(__name__)
 
 class Status_Cache():
-    def __init__(self,homeassistant:HomeAssistant, myTCSSession):
+    def __init__(self,homeassistant:HomeAssistant, status:Status):
         
         self._homeassistant = homeassistant
-        self._myTCSSession = myTCSSession
+        self.status = status
         
         self._sensor_states_cache = {}
         self._program_states_cache = {}
@@ -27,10 +28,12 @@ class Status_Cache():
         return  self._last_update
 
     async def fetch_and_cache_states(self):
-        #_LOGGER.info("Refresh")
+        _LOGGER.info("Refresh")
         try:
+            await self._homeassistant.async_add_executor_job(self.status.request_status)
+            zones = self.status.status_resp.zones
             #zones = await self._homeassistant.async_add_executor_job(self._myTCSSession.get_zones)
-            #self._sensor_states_cache = {zone.idx: zone for zone in zones.root}
+            self._sensor_states_cache = {zone.zone_id: zone for zone in zones}
 
             #programs = await self._homeassistant.async_add_executor_job(self._myTCSSession.get_programs)
             #self._program_states_cache = {i: valore for i, valore in enumerate(programs.root)}
@@ -43,9 +46,7 @@ class Status_Cache():
         return getattr(self._sensor_states_cache.get(sensor_id, "Stato sconosciuto"), propertyName, None)
         #return sensor_states_cache.get(sensor_id, "Stato sconosciuto").status
 
-    def get_program_state(self,program_id,propertyName):
-        return getattr(self._program_states_cache.get(program_id, "Stato sconosciuto"), propertyName, None)
-        #return sensor_states_cache.get(sensor_id, "Stato sconosciuto").status
+    
 
     async def update_cache_periodically(self,interval_seconds=5):
         while True:

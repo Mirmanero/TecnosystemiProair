@@ -2,14 +2,16 @@ import base64
 import requests
 import json
 from datetime import datetime
+from .login import Login  
 
 class Status:
     STATUS_URL = "https://proair.azurewebsites.net/api/v1/GetCUState?cuSerial=414309111391&PIN=2909"
     
-    def __init__(self):
+    def __init__(self, login:Login):
         self.login_user = "mirmanero@gmail.com"
         self.login_password = "PwdProAir"
         self.status_resp = None
+        self._login = login
     
     class StatusResp:
         def __init__(self, data):
@@ -53,10 +55,10 @@ class Status:
             self.c_badge = data.get("CBadge", 0)
             self.c_off = data.get("COff", False)
     
-    def request_status(self, login):
+    def request_status(self):
         try:
             headers = {
-                "token": login.next_token(),
+                "token": self._login.next_token(),
                 "Accept": "*/*",
                 "Host": "proair.azurewebsites.net",
                 "Authorization": "Basic " + base64.b64encode(f"{self.login_user}:{self.login_password}".encode()).decode()
@@ -70,13 +72,3 @@ class Status:
             pass
         return False
 
-# Esempio di utilizzo
-if __name__ == "__main__":
-    from login import Login  # Assumendo che Login sia definito in un file separato
-    
-    login = Login("my_secure_key")
-    if login.login_to_tecnosistemi():
-        status = Status()
-        if status.request_status(login):
-            print("Stato ricevuto con successo!")
-            print(f"Seriale: {status.status_resp.serial}")

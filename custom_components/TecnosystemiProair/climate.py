@@ -1,9 +1,15 @@
-from homeassistant.components.binary_sensor import SensorEntity
-
+from homeassistant.components.climate import (
+    ClimateEntity,
+    ClimateEntityFeature,
+    HVACAction,
+    HVACMode,
+)
+from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from .status_cache import Status_Cache
 from datetime import datetime
+from .status import Status
 
 import logging
 
@@ -11,16 +17,30 @@ _LOGGER = logging.getLogger(__name__)
 
 
 #li sto trattando tutti come porte ma non è vero!
-class DoorSensor(SensorEntity):
-    def __init__(self, obj:TcsZoneObj, entry):
-        self._name =obj.description
+class TecnosystemiSensor(ClimateEntity):
+    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+    _attr_hvac_mode = HVACMode.AUTO
+
+    def __init__(self, obj:Status.StatusZone, entry):
+        self._name =obj.name
         #self._area_id = area_id
-        self._sensor_id = obj.idx
+        self._sensor_id = obj.zone_id
         self._status_cache = entry.runtime_data["cache"]
         
         self._entry = entry
         self.obj = obj
         
+        self._temperature: float | None = None
+        self._humidity: float | None = None
+        
+        self._attr_hvac_modes = [
+            HVACMode.AUTO,
+            HVACMode.HEAT,
+            HVACMode.COOL,
+            HVACMode.OFF,
+        ]
+
 
     @property
     def name(self):
@@ -31,47 +51,31 @@ class DoorSensor(SensorEntity):
         return f"zone_{self._entry.title}_{self._sensor_id}_{self._name}"
 
     @property
-    def is_on(self):
-        # Usa get_sensor_state per ottenere lo stato dal cache
-        try:
-
-            cacheState = self._status_cache.get_sensor_state(self._sensor_id,"status").value
-            self._attr_available = True
-
-            if cacheState == 'OPEN':
-                return True
-            elif cacheState == 'CLOSED':
-                return False       
-            else:
-                self._attr_available = False
-        except:
-            self._attr_available = False
-            return False
-
-
-        
+    def current_temperature(self) -> float | None:
+        """Return the current temperature."""
+        self._temperature = self._status_cache.get_sensor_state(self._sensor_id,"Temp")
+        return self._temperature
+    
     @property
-    def extra_state_attributes(self):
-        """Attributi extra come memoria allarme e dettagli."""
-        return {
-            "inLowBattery": self.inLowBattery,
-            "last cache update": self._status_cache.last_cache_update.isoformat()
-        }
-    @property
-    def inLowBattery(self):
-        return  self._status_cache.get_sensor_state(self._sensor_id,"inLowBattery")
+    def current_humidity(self) -> float | None:
+        """Return the current humidity."""
+        return self._humidity
+    
+
+    
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     _LOGGER.debug("async_setup_entry Sensor")
     #entities = [TecnoalarmAreaControlPanel(hass, entry.data)]
-    zones = entry.runtime_data["zones"]
+    status = entry.runtime_data["status"]
+    zones = status.status_resp.zones
 
-    for zone in zones.root:
+    for zone in zones:
         # Accedere al campo 'description' per ogni elemento
 
-        if zone.allocated:
-            _LOGGER.debug(f"adding #{zone.idx} {zone.description}")
-            async_add_entities([DoorSensor(zone,entry)])
+        
+        _LOGGER.debug(f"adding #{zone.zone_id} {zone.name}")
+        async_add_entities([TecnosystemiSensor(zone,entry)])
 
 
 

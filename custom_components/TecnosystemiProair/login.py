@@ -1,7 +1,7 @@
 import base64
 import json
 import requests
-from string_helpers import StringHelpers  # Assumendo che la classe sia in un file separato
+from .string_helpers import StringHelpers   # Assumendo che la classe sia in un file separato
 
 class Login:
     def __init__(self, key):

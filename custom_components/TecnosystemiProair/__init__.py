@@ -28,25 +28,29 @@ async def async_setup_entry(hass: HomeAssistant, config: dict):
 
     crypt = StringHelpers("1a1636b1ns91wr48")
     login = Login("1a1636b1ns91wr48")
-    status = Status()
+    status = Status(login)
 
     if await hass.async_add_executor_job(login.login_to_tecnosistemi):
-        if await hass.async_add_executor_job(status.request_status,login):
+        if await hass.async_add_executor_job(status.request_status):
             _LOGGER.info("logged!!")
             _LOGGER.info(status)
+            _LOGGER.info(status.status_resp)
+
+            _LOGGER.info(status.status_resp.zones)
+            _LOGGER.info(status.status_resp.zones[0])
 
     #posso creare la cache e aggiornarla
-#    status_cache = Status_Cache(homeassistant,myTCSSession)
+    status_cache = Status_Cache(hass,status)
 #    await status_cache.fetch_and_cache_states()
 
 #    _LOGGER.info("prendo le zone")
 #    zones = await hass.async_add_executor_job(myTCSSession.get_zones) #NON uso .tp.status.zones perchè allocated non è popolato correttamente...
 #    _LOGGER.info("ho zone")
 
-    config.runtime_data = {"zones": status, 
+    config.runtime_data = {"status": status, 
                            "cache": status_cache
                            }
-    #await hass.config_entries.async_forward_entry_setups(config, ["binary_sensor"])
+    await hass.config_entries.async_forward_entry_setups(config, ["climate"])
     #await hass.config_entries.async_forward_entry_setups(config, ["switch"])
     #await hass.config_entries.async_forward_entry_setups(config, ["alarm_control_panel"])
     
