@@ -1,7 +1,11 @@
 import base64
 import json
-import requests
-from .string_helpers import StringHelpers   # Assumendo che la classe sia in un file separato
+import aiohttp
+import asyncio
+import logging
+from .string_helpers import StringHelpers  # Assumendo che la classe sia in un file separato
+
+_LOGGER = logging.getLogger(__name__)
 
 class Login:
     def __init__(self, key):
@@ -31,23 +35,29 @@ class Login:
         self.token = new_encoded_token
         return new_encoded_token
 
-    def login_to_tecnosistemi(self):
+    async def login_to_tecnosistemi(self):
+        _LOGGER.info("login to Tecnosystemi")
+
+        headers = {
+            "token": self.login_token,
+            "Authorization": "Basic " + base64.b64encode(f"{self.login_user}:{self.login_password}".encode()).decode(),
+            "Content-Type": "application/json",
+            "Accept": "*/*"
+        }
+
         try:
-            headers = {
-                "token": self.login_token,
-                "Authorization": "Basic " + base64.b64encode(f"{self.login_user}:{self.login_password}".encode()).decode(),
-                "Content-Type": "application/json",
-                "Accept": "*/*"
-            }
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.login_url, headers=headers, json=self.login_req) as response:
+                    if response.status == 200:
+                        self.login_resp = await response.json()
+                        _LOGGER.info("response 200")
+                        _LOGGER.info(self.login_resp)
+                        self.token = self.login_resp.get("Token")
+                        return True
+                    else:
+                        _LOGGER.error(f"response error {response.status}")
+                        return False
 
-            response = requests.post(self.login_url, headers=headers, json=self.login_req)
-
-            if response.status_code == 200:
-                self.login_resp = response.json()
-                self.token = self.login_resp.get("Token")
-                return True
-
-            return False
         except Exception as e:
-            print(f"Errore durante il login: {e}")
+            _LOGGER.error(f"Errore durante il login: {e}")
             return False

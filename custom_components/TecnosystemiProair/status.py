@@ -3,6 +3,11 @@ import requests
 import json
 from datetime import datetime
 from .login import Login  
+import aiohttp
+import asyncio
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 class Status:
     STATUS_URL = "https://proair.azurewebsites.net/api/v1/GetCUState?cuSerial=414309111391&PIN=2909"
@@ -55,7 +60,7 @@ class Status:
             self.c_badge = data.get("CBadge", 0)
             self.c_off = data.get("COff", False)
     
-    def request_status(self):
+    async def request_status(self):
         try:
             headers = {
                 "token": self._login.next_token(),
@@ -63,11 +68,22 @@ class Status:
                 "Host": "proair.azurewebsites.net",
                 "Authorization": "Basic " + base64.b64encode(f"{self.login_user}:{self.login_password}".encode()).decode()
             }
-            response = requests.get(self.STATUS_URL, headers=headers)
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(self.STATUS_URL, headers=headers) as response:
+                        if response.status == 200:
+                            _LOGGER.debug("risposta 200!!")
+                            self.status_resp = self.StatusResp(await response.json())
+                            return True
+                        else:
+                            _LOGGER.error(f"Errore recupero degli stati: {response.status}")
+                            return False
+            except Exception as e:
+                _LOGGER.error(f"Errore recupero degli stati: {e}")
+                return False
+
+
             
-            if response.status_code == 200:
-                self.status_resp = self.StatusResp(response.json())
-                return True
         except Exception:
             pass
         return False

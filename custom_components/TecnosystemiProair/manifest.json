@@ -2,7 +2,7 @@
     "domain": "TecnosystemiProair",
     "name": "TecnosystemiProair",
     "config_flow": "true",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "documentation": "TBD",
     "requirements": ["requests", "Crypto", "retry", "pydantic"],
     "dependencies": [],

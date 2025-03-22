@@ -26,12 +26,12 @@ async def async_setup_entry(hass: HomeAssistant, config: dict):
 
     global login, crypt
 
-    crypt = StringHelpers("1a1636b1ns91wr48")
-    login = Login("1a1636b1ns91wr48")
+    #crypt = StringHelpers("1a1636b1ns91wr48")
+    login = Login("1a1636b1ns91wr48") #è la chiave di ciratura ma pare non essere una costante, da capire da dove venga
     status = Status(login)
 
-    if await hass.async_add_executor_job(login.login_to_tecnosistemi):
-        if await hass.async_add_executor_job(status.request_status):
+    if await login.login_to_tecnosistemi():
+        if await status.request_status():
             _LOGGER.info("logged!!")
             _LOGGER.info(status)
             _LOGGER.info(status.status_resp)

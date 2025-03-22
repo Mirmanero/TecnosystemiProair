@@ -33,7 +33,9 @@ class TecnosystemiSensor(ClimateEntity):
         
         self._temperature: float | None = None
         self._humidity: float | None = None
-        
+
+        self._temperature = obj.temp
+        self._humidity = obj.umd
         self._attr_hvac_modes = [
             HVACMode.AUTO,
             HVACMode.HEAT,
@@ -53,12 +55,31 @@ class TecnosystemiSensor(ClimateEntity):
     @property
     def current_temperature(self) -> float | None:
         """Return the current temperature."""
-        self._temperature = self._status_cache.get_sensor_state(self._sensor_id,"Temp")
+        #_LOGGER.debug("current_temperature")
+        try:
+            
+            self._temperature = int(self._status_cache.get_sensor_state(self._sensor_id,"temp"))/10
+            _LOGGER.debug(f"current_temperature: {self._temperature}")
+
+            self._attr_available = True
+        except:
+            _LOGGER.debug(f"errror current_temperature")
+            #self._attr_available = False
         return self._temperature
     
     @property
     def current_humidity(self) -> float | None:
         """Return the current humidity."""
+        #_LOGGER.debug("current_humidity")
+        try:
+            
+            self._humidity = int(self._status_cache.get_sensor_state(self._sensor_id,"umd"))/10
+            #_LOGGER.debug(f"current_humidity: {self._humidity}")
+            self._attr_available = True
+        except:
+            _LOGGER.debug(f"errror current_humidity")
+            #self._attr_available = False
+
         return self._humidity
     
 
